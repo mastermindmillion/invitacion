@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#05070f">
+<title>Mastermind Million — Invitación</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0b0f1f;
+    --navy2:#10162c;
+    --gold:#caa24a;
+    --gold-light:#e8c878;
+    --gold-deep:#9c7830;
+    --white:#f5f3ee;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;
+    padding:0;
+    width:100%;
+    min-height:100vh;
+    background:#05070f;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Poppins','Helvetica Neue',Arial,sans-serif;
+    overflow-x:hidden;
+    -webkit-text-size-adjust:100%;
+  }
+  .stage{
+    position:relative;
+    width:100%;
+    max-width:560px;
+    padding:40px 20px calc(40px + env(safe-area-inset-bottom));
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .hint{
+    color:var(--gold-light);
+    font-size:14px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    margin-bottom:28px;
+    opacity:0.85;
+    text-align:center;
+    transition:opacity 0.4s ease;
+  }
+  .envelope-wrap{
+    position:relative;
+    width:100%;
+    max-width:420px;
+    aspect-ratio:1.7/1;
+    cursor:pointer;
+    perspective:1400px;
+    filter:drop-shadow(0 30px 40px rgba(0,0,0,0.55));
+    transition:opacity 0.4s ease 0.45s, transform 0.4s ease 0.45s, margin 0.4s ease 0.45s, max-height 0.4s ease 0.45s;
+    max-height:1000px;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+    user-select:none;
+  }
+  .envelope-wrap.opened{ cursor:default; }
+  .envelope-wrap.hide-envelope{
+    opacity:0;
+    transform:scale(0.92);
+    max-height:0;
+    margin-bottom:0;
+    pointer-events:none;
+  }
+  .envelope-wrap::before{
+    content:"";
+    position:absolute;
+    left:6%;
+    right:6%;
+    bottom:-14px;
+    height:24px;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0.45), transparent 75%);
+    z-index:0;
+    transition:opacity 0.6s ease;
+  }
+  .envelope-wrap.opened::before{ opacity:0.5; }
+
+  .paper-noise{
+    position:absolute;
+    inset:0;
+    opacity:0.05;
+    mix-blend-mode:overlay;
+    pointer-events:none;
+  }
+
+  .envelope-back{
+    position:absolute;
+    inset:0;
+    background:
+      radial-gradient(120% 90% at 30% 0%, rgba(255,255,255,0.04), transparent 55%),
+      linear-gradient(165deg,var(--navy2) 0%, var(--navy) 55%, #080b16 100%);
+    border:1px solid var(--gold);
+    border-radius:5px;
+    overflow:hidden;
+  }
+  .envelope-back::after{
+    content:"";
+    position:absolute;
+    left:0; right:0; bottom:0;
+    height:60%;
+    background:linear-gradient(180deg, transparent, rgba(0,0,0,0.3));
+  }
+  .side-fold{
+    position:absolute;
+    top:0;
+    width:50%;
+    height:100%;
+    background:linear-gradient(120deg, rgba(255,255,255,0.025), transparent 60%);
+    z-index:1;
+    pointer-events:none;
+  }
+  .side-fold.left{ left:0; clip-path:polygon(0 0,100% 50%,0 100%); }
+  .side-fold.right{ right:0; clip-path:polygon(100% 0,0 50%,100% 100%); }
+
+  .flap-top{
+    position:absolute;
+    left:0; right:0; top:0;
+    height:56%;
+    transform-origin:top center;
+    transform:rotateX(0deg);
+    transition:transform 0.65s cubic-bezier(.45,0,.25,1);
+    z-index:5;
+    backface-visibility:hidden;
+  }
+  .flap-top svg{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    display:block;
+    filter:drop-shadow(0 3px 6px rgba(0,0,0,0.45));
+  }
+  .envelope-wrap.opened .flap-top{
+    transform:rotateX(178deg);
+    z-index:1;
+  }
+
+  .seal{
+    position:absolute;
+    top:51%;
+    left:50%;
+    width:58px;
+    height:58px;
+    margin-left:-29px;
+    margin-top:-29px;
+    z-index:6;
+    transition:opacity 0.3s ease, transform 0.3s ease;
+    filter:drop-shadow(0 4px 8px rgba(0,0,0,0.55));
+  }
+  .envelope-wrap.opened .seal{
+    opacity:0;
+    transform:scale(0.6) rotate(8deg);
+    pointer-events:none;
+  }
+  .seal svg{ width:100%; height:100%; }
+
+  .brand{
+    position:absolute;
+    bottom:12%;
+    left:0; right:0;
+    text-align:center;
+    z-index:3;
+    padding:0 18%;
+  }
+  .brand .m-logo-full{
+    width:100%;
+    max-width:110px;
+    display:block;
+    margin:0 auto;
+  }
+
+  .invite-panel{
+    width:100%;
+    max-width:460px;
+    background:var(--navy);
+    border:1px solid var(--gold);
+    border-radius:6px;
+    margin-top:24px;
+    padding:48px 36px 40px;
+    text-align:center;
+    color:var(--white);
+    opacity:0;
+    transform:translateY(28px) scale(0.96);
+    filter:blur(6px);
+    box-shadow:0 0 0 rgba(202,162,74,0);
+    transition:opacity 0.7s cubic-bezier(.16,1,.3,1),
+               transform 0.7s cubic-bezier(.16,1,.3,1),
+               filter 0.7s cubic-bezier(.16,1,.3,1),
+               box-shadow 0.9s ease;
+  }
+  .invite-panel.show{
+    opacity:1;
+    transform:translateY(0) scale(1);
+    filter:blur(0);
+    box-shadow:0 0 40px rgba(202,162,74,0.18);
+  }
+  .invite-panel > *{
+    opacity:0;
+    transform:translateY(10px);
+    transition:opacity 0.45s ease, transform 0.45s ease;
+  }
+  .invite-panel.show > *{ opacity:1; transform:translateY(0); }
+  .invite-panel.show > *:nth-child(1){ transition-delay:0.08s; }
+  .invite-panel.show > *:nth-child(2){ transition-delay:0.14s; }
+  .invite-panel.show > *:nth-child(3){ transition-delay:0.2s; }
+  .invite-panel.show > *:nth-child(4){ transition-delay:0.26s; }
+  .invite-panel.show > *:nth-child(5){ transition-delay:0.3s; }
+  .invite-panel.show > *:nth-child(6){ transition-delay:0.34s; }
+  .invite-panel.show > *:nth-child(7){ transition-delay:0.4s; }
+  .invite-panel.show > *:nth-child(8){ transition-delay:0.46s; }
+  .invite-panel.show > *:nth-child(9){ transition-delay:0.52s; }
+  .invite-panel .m-big{
+    width:76px;
+    margin:0 auto 22px;
+    display:block;
+  }
+  .invite-panel .eyebrow{
+    font-size:13px;
+    letter-spacing:1px;
+    color:var(--white);
+    opacity:0.85;
+  }
+  .invite-panel h1{
+    font-size:26px;
+    color:var(--gold);
+    letter-spacing:1px;
+    margin:6px 0 16px;
+    font-weight:600;
+  }
+  .invite-panel p{
+    font-size:14px;
+    line-height:1.6;
+    color:var(--white);
+    opacity:0.9;
+    margin:0 0 14px;
+  }
+  .invite-panel p strong{
+    color:var(--gold);
+  }
+  .divider{
+    width:60%;
+    margin:14px auto;
+    border:none;
+    border-top:1px solid rgba(202,162,74,0.4);
+  }
+  .private-text{
+    font-size:14px;
+    color:var(--white);
+  }
+  .private-text strong{
+    color:var(--gold);
+    display:block;
+    margin-top:4px;
+  }
+  .details-row{
+    display:flex;
+    border:1px solid var(--gold);
+    border-radius:8px;
+    margin:22px 0;
+    overflow:hidden;
+  }
+  .details-col{
+    flex:1;
+    padding:14px 8px;
+    text-align:center;
+  }
+  .details-col:first-child{
+    border-right:1px solid rgba(202,162,74,0.4);
+  }
+  .details-col svg{
+    width:20px;
+    height:20px;
+    color:var(--gold);
+    margin-bottom:6px;
+  }
+  .details-col .d-main{
+    font-size:14px;
+    font-weight:800;
+    color:var(--white);
+  }
+  .details-col .d-sub{
+    font-size:13px;
+    font-weight:800;
+    color:var(--gold);
+  }
+  .welcome-text{
+    font-size:13px;
+    color:var(--white);
+    opacity:0.9;
+    margin-top:8px;
+  }
+  .welcome-text strong{
+    color:var(--gold);
+    display:block;
+    margin-top:4px;
+  }
+  .cta-button{
+    display:inline-block;
+    margin-top:26px;
+    padding:15px 40px;
+    background:linear-gradient(135deg, #f1d28e 0%, #caa24a 45%, #9c7830 100%);
+    color:#3a2a0f;
+    font-weight:800;
+    font-size:13px;
+    letter-spacing:2.5px;
+    text-decoration:none;
+    border-radius:4px;
+    text-transform:uppercase;
+    border:1px solid #e8c878;
+    box-shadow:0 6px 16px rgba(202,162,74,0.35), inset 0 1px 0 rgba(255,255,255,0.4);
+    transition:transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+  .cta-button:hover{
+    background:linear-gradient(135deg, #f7dea6 0%, #d8b15c 45%, #ab8838 100%);
+    transform:translateY(-2px);
+    box-shadow:0 10px 22px rgba(202,162,74,0.45), inset 0 1px 0 rgba(255,255,255,0.5);
+  }
+  .mini-title,
+  .invite-panel h1,
+  .invite-panel p strong,
+  .private-text strong,
+  .details-col .d-sub,
+  .welcome-text strong{
+    background:linear-gradient(135deg, #f1d28e 0%, #caa24a 45%, #9c7830 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  @media (hover:none){
+    .cta-button:hover, .envelope-wrap:hover{ transform:none; }
+  }
+
+  @media (max-width:480px){
+    .stage{ padding:24px 16px calc(24px + env(safe-area-inset-bottom)); }
+    .hint{ font-size:12px; margin-bottom:20px; }
+    .envelope-wrap{ max-width:340px; }
+    .seal{ width:46px; height:46px; margin-left:-23px; margin-top:-23px; }
+    .brand .m-logo-full{ max-width:88px; }
+    .invite-panel{ padding:34px 20px 30px; border-radius:8px; max-width:100%; }
+    .invite-panel .m-big{ width:60px; margin-bottom:16px; }
+    .invite-panel .eyebrow{ font-size:11px; }
+    .invite-panel h1{ font-size:21px; margin:6px 0 14px; }
+    .invite-panel p{ font-size:13px; }
+    .private-text, .welcome-text{ font-size:13px; }
+    .details-row{ margin:18px 0; }
+    .details-col{ padding:12px 6px; }
+    .details-col .d-main{ font-size:13px; }
+    .details-col .d-sub{ font-size:12px; }
+    .cta-button{
+      display:block;
+      width:100%;
+      padding:15px 0;
+      font-size:12px;
+      letter-spacing:1.8px;
+    }
+  }
+
+  @media (max-width:340px){
+    .invite-panel h1{ font-size:18px; }
+    .details-row{ flex-direction:column; }
+    .details-col:first-child{ border-right:none; border-bottom:1px solid rgba(202,162,74,0.4); }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="hint" id="hintText">Toca el sobre para abrirlo</div>
+
+  <div class="envelope-wrap" id="envelope">
+    <div class="envelope-back">
+      <div class="side-fold left"></div>
+      <div class="side-fold right"></div>
+      <div class="brand">
+        <svg class="m-logo-full" viewBox="0 0 1996 990" xmlns="http://www.w3.org/2000/svg">
+          <path d="M869.276 196.698C871.193 198.323 876.644 204.45 878.708 206.595L904.769 233.937L976.41 307.121C976.316 325.786 976.103 345.25 976.448 363.878C973.656 361.227 970.789 358.093 968.127 355.255C948.548 334.376 926.975 314.45 907.955 293.158C908.497 312.224 908.103 333.1 908.109 352.279L908.118 444.902C908.115 459.886 907.721 475.721 908.075 490.571C895.48 476.865 881.366 463.511 869.073 449.642C869.841 423.939 869.23 395.203 869.237 369.298L869.276 196.698ZM1129.84 196.35C1130.64 197.87 1130.24 424.757 1130.36 449.228C1118 462.918 1104.4 476.649 1091.68 490.101C1092.08 473.653 1091.78 456.553 1091.76 440.058L1091.79 354.712C1091.71 334.105 1091.73 313.502 1091.87 292.896C1070.34 316.429 1046.58 340.299 1024.49 363.468C1024.61 345.318 1025.02 323.843 1024.32 305.848C1034.94 293.848 1048.85 280.198 1060.15 268.478L1129.84 196.35ZM787 0C789.096 1.5823 801.931 15.1225 804.504 17.752L843.193 56.9932L991.408 207.266C991.258 227.17 991.287 247.076 991.485 266.981L838.118 110.303C834.236 106.346 830.391 102.352 826.586 98.3213C827.161 120.246 826.667 144.298 826.662 166.35L826.646 327.322C826.644 353.722 826.018 381.89 826.675 408.107C814.14 394.543 799.171 380.973 787.071 367.478L787 0ZM1208.53 0.544922C1209.26 1.81719 1208.92 66.4617 1208.92 73.2705L1208.97 367.77C1197.93 380.491 1182.56 395.54 1170.66 407.856C1170.95 399.331 1170.69 389.22 1170.68 380.617L1170.67 333.043L1170.63 181.308C1170.61 154.035 1170.15 125.36 1170.77 98.1807C1168.5 101.026 1163.99 105.532 1161.33 108.331L1077.25 195.898C1054.26 219.498 1031.41 243.237 1008.71 267.119C1008.91 247.153 1008.9 227.184 1008.7 207.218C1013.66 201.575 1020.21 195.099 1025.5 189.657L1053.91 160.363L1151.88 59.2969L1185.82 24.2002C1193.28 16.4886 1201.32 8.44461 1208.53 0.544922Z" fill="#caa24a"/>
+          <path d="M1070.43 989.85H1059.93V885H1070.43V989.85ZM1175.83 879C1185.63 879 1194.48 881.3 1202.38 885.9C1210.28 890.4 1216.48 896.75 1220.98 904.95C1225.48 913.05 1227.73 922.25 1227.73 932.55C1227.73 942.85 1225.48 952.1 1220.98 960.3C1216.48 968.4 1210.28 974.75 1202.38 979.35C1194.48 983.85 1185.63 986.1 1175.83 986.1C1166.13 986.1 1157.33 983.85 1149.43 979.35C1141.53 974.75 1135.28 968.4 1130.68 960.3C1126.18 952.1 1123.93 942.85 1123.93 932.55C1123.93 922.25 1126.18 913.05 1130.68 904.95C1135.28 896.75 1141.53 890.4 1149.43 885.9C1157.33 881.3 1166.13 879 1175.83 879ZM686.15 971.7L726.2 882H737.45V985.5H726.95V902.85L690.05 985.5H682.4L645.5 903.15V985.5H635V882H646.1L686.15 971.7ZM802.431 984.85H791.931V880H802.431V984.85ZM866.431 976.3H904.081V984.85H855.931V880H866.431V976.3ZM968.43 976.3H1006.08V984.85H957.931V880H968.43V976.3ZM1350.48 968.05V880H1360.98V984.85H1350.48L1292.43 896.65V984.85H1281.93V880H1292.43L1350.48 968.05ZM1175.83 888.3C1168.03 888.3 1161.03 890.1 1154.83 893.7C1148.63 897.3 1143.73 902.45 1140.13 909.15C1136.53 915.85 1134.73 923.65 1134.73 932.55C1134.73 941.45 1136.53 949.3 1140.13 956.1C1143.73 962.8 1148.63 967.95 1154.83 971.55C1161.03 975.15 1168.03 976.95 1175.83 976.95C1183.63 976.95 1190.63 975.15 1196.83 971.55C1203.03 967.95 1207.93 962.8 1211.53 956.1C1215.13 949.3 1216.93 941.45 1216.93 932.55C1216.93 923.65 1215.13 915.85 1211.53 909.15C1207.93 902.45 1203.03 897.3 1196.83 893.7C1190.63 890.1 1183.63 888.3 1175.83 888.3ZM515.127 591.5C527.627 591.5 538.044 593.583 546.377 597.75C554.71 601.917 561.21 607.5 565.877 614.5C570.544 621.333 573.627 629.083 575.127 637.75H551.627C549.96 630.75 546.377 624.833 540.877 620C535.544 615 526.96 612.5 515.127 612.5C503.127 612.5 493.794 615 487.127 620C480.627 624.833 477.377 630.75 477.377 637.75C477.377 646.917 480.794 653.667 487.627 658C494.46 662.167 505.377 665.917 520.377 669.25C531.21 671.583 540.46 674.25 548.127 677.25C555.96 680.25 562.294 683.833 567.127 688C572.127 692 575.71 696.833 577.877 702.5C580.21 708.167 581.377 714.917 581.377 722.75C581.377 731.75 578.71 740 573.377 747.5C568.21 754.833 560.71 760.667 550.877 765C541.044 769.333 529.127 771.5 515.127 771.5C501.127 771.5 489.46 769.333 480.127 765C470.96 760.667 463.877 754.833 458.877 747.5C453.877 740 450.544 731.75 448.877 722.75H472.377C474.21 730.417 478.377 737 484.877 742.5C491.377 747.833 501.46 750.5 515.127 750.5C529.127 750.5 539.71 747.833 546.877 742.5C554.21 737.167 557.877 730.583 557.877 722.75C557.877 716.25 556.377 711.083 553.377 707.25C550.377 703.25 545.377 699.917 538.377 697.25C531.544 694.417 522.21 691.667 510.377 689C497.377 686.167 486.71 682.833 478.377 679C470.044 675.167 463.877 670 459.877 663.5C455.877 657 453.877 648.417 453.877 637.75C453.877 629.083 456.294 621.333 461.127 614.5C466.127 607.5 473.21 601.917 482.377 597.75C491.544 593.583 502.46 591.5 515.127 591.5ZM83 705.25L141.5 594H165V769H141.5V636.5L91.25 731.5H73.75L23.5 636.5V769H0V594H24.5L83 705.25ZM392.588 769H367.088L350.338 725.5H276.338L259.588 769H235.088L302.088 594H325.588L392.588 769ZM782.598 614.5H721.848V769H698.348V614.5H637.598V594H782.598V614.5ZM965.127 614.5H876.127V668.75H957.627V689.25H876.127V748.5H965.127V769H852.627V594H965.127V614.5ZM1106.46 594C1121.13 594 1133.29 596.333 1142.96 601C1152.79 605.5 1160.21 611.75 1165.21 619.75C1170.21 627.583 1172.71 636.5 1172.71 646.5C1172.71 658.167 1169.21 668.417 1162.21 677.25C1155.38 685.917 1145.21 692 1131.71 695.5L1177.71 769H1149.96L1108.21 698.5H1068.71V769H1045.21V594H1106.46ZM1338.13 705.25L1396.63 594H1420.13V769H1396.63V636.5L1346.38 731.5H1328.88L1278.63 636.5V769H1255.13V594H1279.63L1338.13 705.25ZM1536.22 769H1512.72V594H1536.22V769ZM1745.83 730.25V594H1768.83V769H1745.83L1651.83 632.75V769H1628.83V594H1651.83L1745.83 730.25ZM1910.03 594C1927.53 594 1942.53 597.167 1955.03 603.5C1967.53 609.833 1977.11 619.25 1983.78 631.75C1990.44 644.083 1993.78 659.417 1993.78 677.75V682.75C1993.78 701.417 1990.36 717.167 1983.53 730C1976.69 742.833 1966.78 752.583 1953.78 759.25C1940.94 765.75 1925.53 769 1907.53 769H1858.78V594H1910.03ZM1882.28 748.5H1905.03C1918.19 748.5 1929.53 746.25 1939.03 741.75C1948.53 737.25 1955.86 730.167 1961.03 720.5C1966.19 710.833 1968.78 698.25 1968.78 682.75V677.75C1968.78 662.75 1966.28 650.667 1961.28 641.5C1956.28 632.167 1949.19 625.333 1940.03 621C1931.15 616.802 1920.71 614.638 1908.7 614.507L1907.53 614.5H1882.28V748.5ZM284.088 705H342.588L313.338 624L284.088 705ZM1068.71 678.5H1103.96C1120.13 678.5 1131.71 675.583 1138.71 669.75C1145.71 663.75 1149.21 656 1149.21 646.5C1149.21 637 1145.71 629.333 1138.71 623.5C1131.71 617.5 1120.13 614.5 1103.96 614.5H1068.71V678.5Z" fill="#caa24a"/>
+          <path d="M1450 930H1996V939H1450V930Z" fill="#caa24a"/>
+          <path d="M0 930H546V939H0V930Z" fill="#caa24a"/>
+        </svg>
+      </div>
+    </div>
+    <div class="flap-top">
+      <svg viewBox="0 0 400 224" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="flapFill" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#141b34"/>
+            <stop offset="60%" stop-color="#0e1326"/>
+            <stop offset="100%" stop-color="#0b0f1f"/>
+          </linearGradient>
+          <linearGradient id="flapSheen" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.06"/>
+            <stop offset="40%" stop-color="#ffffff" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <polygon points="2,2 398,2 200,210" fill="url(#flapFill)" stroke="#caa24a" stroke-width="1.5"/>
+        <polygon points="2,2 398,2 200,210" fill="url(#flapSheen)"/>
+        <line x1="14" y1="10" x2="194" y2="196" stroke="#e8c878" stroke-width="1" opacity="0.55"/>
+        <line x1="386" y1="10" x2="206" y2="196" stroke="#e8c878" stroke-width="1" opacity="0.55"/>
+      </svg>
+    </div>
+    <div class="seal">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="rimGrad" cx="32%" cy="22%" r="80%">
+            <stop offset="0%" stop-color="#fbe7b8"/>
+            <stop offset="35%" stop-color="#e3b865"/>
+            <stop offset="70%" stop-color="#b8893f"/>
+            <stop offset="100%" stop-color="#6e4f1d"/>
+          </radialGradient>
+          <radialGradient id="faceGrad" cx="35%" cy="28%" r="75%">
+            <stop offset="0%" stop-color="#e9c887"/>
+            <stop offset="50%" stop-color="#c79b4d"/>
+            <stop offset="100%" stop-color="#8a6630"/>
+          </radialGradient>
+          <linearGradient id="innerShade" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#000000" stop-opacity="0.32"/>
+            <stop offset="45%" stop-color="#000000" stop-opacity="0"/>
+            <stop offset="100%" stop-color="#fff6df" stop-opacity="0.18"/>
+          </linearGradient>
+          <filter id="waxBumps">
+            <feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="2" result="noise" seed="7"/>
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.6"/>
+          </filter>
+        </defs>
+        <circle cx="50" cy="50" r="47" fill="url(#rimGrad)" filter="url(#waxBumps)"/>
+        <circle cx="50" cy="50" r="38" fill="url(#faceGrad)"/>
+        <circle cx="50" cy="50" r="38" fill="url(#innerShade)"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#fff6df" stroke-width="0.6" opacity="0.35"/>
+        <circle cx="50" cy="50" r="44.5" fill="none" stroke="#5e431a" stroke-width="0.8" opacity="0.5"/>
+        <circle cx="50" cy="50" r="47" fill="none" stroke="#fff2cf" stroke-width="0.5" opacity="0.3"/>
+        <g transform="translate(34,29) scale(0.071)">
+          <path d="M82.2764 196.698C84.1927 198.323 89.6437 204.45 91.708 206.595L117.769 233.937L189.41 307.121C189.316 325.786 189.103 345.25 189.448 363.878C186.656 361.227 183.789 358.093 181.127 355.255C161.548 334.376 139.975 314.45 120.955 293.158C121.497 312.224 121.103 333.1 121.109 352.279L121.118 444.902C121.115 459.886 120.721 475.721 121.075 490.571C108.48 476.865 94.366 463.511 82.0732 449.642C82.8415 423.939 82.2304 395.203 82.2373 369.298L82.2764 196.698ZM342.838 196.35C343.644 197.87 343.243 424.757 343.356 449.228C331.004 462.918 317.402 476.649 304.681 490.101C305.078 473.653 304.778 456.553 304.762 440.058L304.786 354.712C304.709 334.105 304.733 313.502 304.867 292.896C283.34 316.429 259.584 340.299 237.485 363.468C237.611 345.318 238.02 323.843 237.318 305.848C247.944 293.848 261.85 280.198 273.152 268.478L342.838 196.35ZM0 0C2.09636 1.5823 14.9308 15.1225 17.5039 17.752L56.1934 56.9932L204.408 207.266C204.258 227.17 204.287 247.076 204.485 266.981L51.1182 110.303C47.236 106.346 43.3915 102.352 39.5859 98.3213C40.1608 120.246 39.6674 144.298 39.6621 166.35L39.6455 327.322C39.6443 353.722 39.0185 381.89 39.6748 408.107C27.1405 394.543 12.1706 380.973 0.0712891 367.478L0 0ZM421.527 0.544922C422.257 1.81719 421.925 66.4617 421.925 73.2705L421.974 367.77C410.93 380.491 395.557 395.54 383.658 407.856C383.95 399.331 383.695 389.22 383.679 380.617L383.675 333.043L383.63 181.308C383.614 154.035 383.147 125.36 383.768 98.1807C381.497 101.026 376.986 105.532 374.326 108.331L290.249 195.898C267.259 219.498 244.413 243.237 221.715 267.119C221.909 247.153 221.905 227.184 221.698 207.218C226.66 201.575 233.212 195.099 238.503 189.657L266.909 160.363L364.88 59.2969L398.816 24.2002C406.28 16.4886 414.323 8.44461 421.527 0.544922Z" fill="#4a3414" opacity="0.9"/>
+          <path d="M82.2764 196.698C84.1927 198.323 89.6437 204.45 91.708 206.595L117.769 233.937L189.41 307.121C189.316 325.786 189.103 345.25 189.448 363.878C186.656 361.227 183.789 358.093 181.127 355.255C161.548 334.376 139.975 314.45 120.955 293.158C121.497 312.224 121.103 333.1 121.109 352.279L121.118 444.902C121.115 459.886 120.721 475.721 121.075 490.571C108.48 476.865 94.366 463.511 82.0732 449.642C82.8415 423.939 82.2304 395.203 82.2373 369.298L82.2764 196.698ZM342.838 196.35C343.644 197.87 343.243 424.757 343.356 449.228C331.004 462.918 317.402 476.649 304.681 490.101C305.078 473.653 304.778 456.553 304.762 440.058L304.786 354.712C304.709 334.105 304.733 313.502 304.867 292.896C283.34 316.429 259.584 340.299 237.485 363.468C237.611 345.318 238.02 323.843 237.318 305.848C247.944 293.848 261.85 280.198 273.152 268.478L342.838 196.35ZM0 0C2.09636 1.5823 14.9308 15.1225 17.5039 17.752L56.1934 56.9932L204.408 207.266C204.258 227.17 204.287 247.076 204.485 266.981L51.1182 110.303C47.236 106.346 43.3915 102.352 39.5859 98.3213C40.1608 120.246 39.6674 144.298 39.6621 166.35L39.6455 327.322C39.6443 353.722 39.0185 381.89 39.6748 408.107C27.1405 394.543 12.1706 380.973 0.0712891 367.478L0 0ZM421.527 0.544922C422.257 1.81719 421.925 66.4617 421.925 73.2705L421.974 367.77C410.93 380.491 395.557 395.54 383.658 407.856C383.95 399.331 383.695 389.22 383.679 380.617L383.675 333.043L383.63 181.308C383.614 154.035 383.147 125.36 383.768 98.1807C381.497 101.026 376.986 105.532 374.326 108.331L290.249 195.898C267.259 219.498 244.413 243.237 221.715 267.119C221.909 247.153 221.905 227.184 221.698 207.218C226.66 201.575 233.212 195.099 238.503 189.657L266.909 160.363L364.88 59.2969L398.816 24.2002C406.28 16.4886 414.323 8.44461 421.527 0.544922Z" fill="none" stroke="#fff6df" stroke-width="3" opacity="0.25" transform="translate(-3,-3)"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="invite-panel" id="invitePanel">
+    <svg class="m-big" viewBox="0 0 422 491" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="unionGrad" x1="211" y1="0" x2="211" y2="490.571" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#f1d28e"/>
+          <stop offset="0.5" stop-color="#caa24a"/>
+          <stop offset="1" stop-color="#9c7830"/>
+        </linearGradient>
+      </defs>
+      <path d="M82.2764 196.698C84.1927 198.323 89.6437 204.45 91.708 206.595L117.769 233.937L189.41 307.121C189.316 325.786 189.103 345.25 189.448 363.878C186.656 361.227 183.789 358.093 181.127 355.255C161.548 334.376 139.975 314.45 120.955 293.158C121.497 312.224 121.103 333.1 121.109 352.279L121.118 444.902C121.115 459.886 120.721 475.721 121.075 490.571C108.48 476.865 94.366 463.511 82.0732 449.642C82.8415 423.939 82.2304 395.203 82.2373 369.298L82.2764 196.698ZM342.838 196.35C343.644 197.87 343.243 424.757 343.356 449.228C331.004 462.918 317.402 476.649 304.681 490.101C305.078 473.653 304.778 456.553 304.762 440.058L304.786 354.712C304.709 334.105 304.733 313.502 304.867 292.896C283.34 316.429 259.584 340.299 237.485 363.468C237.611 345.318 238.02 323.843 237.318 305.848C247.944 293.848 261.85 280.198 273.152 268.478L342.838 196.35ZM0 0C2.09636 1.5823 14.9308 15.1225 17.5039 17.752L56.1934 56.9932L204.408 207.266C204.258 227.17 204.287 247.076 204.485 266.981L51.1182 110.303C47.236 106.346 43.3915 102.352 39.5859 98.3213C40.1608 120.246 39.6674 144.298 39.6621 166.35L39.6455 327.322C39.6443 353.722 39.0185 381.89 39.6748 408.107C27.1405 394.543 12.1706 380.973 0.0712891 367.478L0 0ZM421.527 0.544922C422.257 1.81719 421.925 66.4617 421.925 73.2705L421.974 367.77C410.93 380.491 395.557 395.54 383.658 407.856C383.95 399.331 383.695 389.22 383.679 380.617L383.675 333.043L383.63 181.308C383.614 154.035 383.147 125.36 383.768 98.1807C381.497 101.026 376.986 105.532 374.326 108.331L290.249 195.898C267.259 219.498 244.413 243.237 221.715 267.119C221.909 247.153 221.905 227.184 221.698 207.218C226.66 201.575 233.212 195.099 238.503 189.657L266.909 160.363L364.88 59.2969L398.816 24.2002C406.28 16.4886 414.323 8.44461 421.527 0.544922Z" fill="url(#unionGrad)"/>
+    </svg>
+    <div class="eyebrow">HAS SIDO INVITADO AL ENCUENTRO DE</div>
+    <h1>MASTERMIND MILLION</h1>
+    <p>Un espacio exclusivo donde se reúnen empresarios y creadores que están construyendo negocios online que <strong>facturan más de 1 millón de dólares</strong>, o que han construido <strong>audiencias de más de 1 millón de seguidores.</strong></p>
+    <hr class="divider">
+    <p>Durante 2 días vivirás conversaciones de alto nivel, conexiones estratégicas y aprendizajes junto a ponentes que facturan más de 8 cifras anuales.</p>
+    <div class="private-text">
+      Este no es un evento masivo.
+      <strong>Es una experiencia privada, limitada a 50 personas invitadas personalmente.</strong>
+    </div>
+
+    <div class="details-row">
+      <div class="details-col">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <div class="d-main">26 Y 27</div>
+        <div class="d-sub">DE AGOSTO</div>
+      </div>
+      <div class="details-col">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <div class="d-main">LUGAR</div>
+        <div class="d-sub">CDMX</div>
+      </div>
+    </div>
+
+    <div class="welcome-text">
+      BIENVENIDO/A A UNA EXPERIENCIA CREADA PARA
+      <strong>LOS QUE JUEGAN EN GRANDE.</strong>
+    </div>
+
+    <a class="cta-button" href="https://mastermindmillion.github.io/confirm/" target="_blank" rel="noopener">Confirmar Asistencia</a>
+  </div>
+</div>
+
+<script>
+  const envelope = document.getElementById('envelope');
+  const invitePanel = document.getElementById('invitePanel');
+  const hintText = document.getElementById('hintText');
+  let opened = false;
+
+  envelope.addEventListener('click', function(){
+    if(opened) return;
+    opened = true;
+    envelope.classList.add('opened');
+    hintText.style.opacity = '0';
+    setTimeout(function(){
+      envelope.classList.add('hide-envelope');
+    }, 500);
+    setTimeout(function(){
+      invitePanel.classList.add('show');
+    }, 850);
+  });
+</script>
+
+</body>
+</html>
